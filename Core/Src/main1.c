@@ -20,6 +20,7 @@
 #include "main.h"
 #include "app_mems.h"
 #include "maps.h"
+#include "math.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -249,6 +250,9 @@ int main(void)
 
   int bab_pos = 0;
   int map_pos = 0;
+  int jumpCounter = 0;
+  int is_jumping = 0;
+  int game_state = 3;
  
   ///////////////
   /* USER CODE END 2 */
@@ -279,13 +283,18 @@ int main(void)
 
       MX_MEMS_Process();
 
-	  	uint32_t value = HAL_ADC_GetValue(&hadc1);
-	    int stan_guzika = (value + 300) / 700;
+	  	uint32_t wartosc_z_adc = HAL_ADC_GetValue(&hadc1);
+	    int stan_guzika = (wartosc_z_adc + 300) / 700;
 
       lcd_clear();
-	  }
 
-	  	switch (liczba) {
+      //magnetometr
+      if(abs(magnetic_field_current - magnetic_field_recent) > 500)
+      {
+        is_jumping = 1;
+      }
+
+	  	switch (stan_guzika) {
 	  	case 0:
 	  	break;
 	  	case 1:
@@ -302,6 +311,9 @@ int main(void)
 	  	case 5:
 	  	break;
 	  	}
+	  }
+
+    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
