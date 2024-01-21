@@ -183,7 +183,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-	if (HAL_GetTick() % 33 == 0)
+	if (HAL_GetTick() % 333 == 0)
 	{
 		fps_flag = 1;
 	}

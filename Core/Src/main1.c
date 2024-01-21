@@ -23,7 +23,6 @@
 #include "math.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -33,10 +32,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-struct two_int {
-	int one;
-	int two;
-};
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -139,19 +135,19 @@ void print_time_spent_on_map(RTC_TimeTypeDef time_end)
 	lcd_print(1, 1, time_buffer);
 }
 
-void wyswietl_babaluge()
+void wyswietl_babaluge(int row, int position)
 {
-		lcd_char(1, 1, 0);
+		lcd_char(row, position, 0);
 }
 
-void wyswietl_kaktus()
+void wyswietl_kaktus(int position)
 {
-		lcd_char(1, 2, 1);
+		lcd_char(2, position, 1);
 }
 
-void wyswietl_krzak()
+void wyswietl_krzak(int position)
 {
-		lcd_char(1, 3, 2);
+		lcd_char(2, position, 2);
 }
 
 
@@ -186,10 +182,11 @@ void start_screen(const char *text)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	
+  int current_map_up[500];
+  int current_map_down[500];
 
-  srand(time(NULL));
-	struct int_two mapa[500];
-
+  int current_map_length;
 
   /* USER CODE END 1 */
 
@@ -248,11 +245,19 @@ int main(void)
 
   //////////////// zmienne
 
+  int map_buffor_up[16];
+  int map_buffor_down[16];
+
+  int select_flag = 0;
+
   int bab_pos = 0;
   int map_pos = 0;
   int jumpCounter = 0;
   int is_jumping = 0;
-  int game_state = 3;
+  int game_state = 3; // 0-stan startowy, 1-gra, 2-tranzycja, 3-wyświetlanie lore
+
+  int texture_value_up = 0;
+  int texture_value_down = 0;
  
   ///////////////
   /* USER CODE END 2 */
@@ -261,56 +266,100 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /*
-	  
-	  lcd_line1();
-	  wyswietl_babaluge();
-	  wyswietl_kaktus();
-	  wyswietl_krzak();
+	  //print_time_spent_on_map(czas_przejscia_mapy);
+    uint32_t wartosc_z_adc = HAL_ADC_GetValue(&hadc1);
+	  int stan_guzika = (wartosc_z_adc + 300) / 700;
 
-	 
-	  print_time_spent_on_map(czas_przejscia_mapy);
-	  */
+    //magnetometr
+      if(abs(magnetic_field_current.x - magnetic_field_recent.x) > 500)
+      {
+        is_jumping = 1;
+        jumpCounter = 0;
+      }
+
+//tryby gry
+    switch (stan_guzika) {
+	  	case 1:
+	  		//obsluga skoku przez guzik UP
+        if(!is_jumping){
+          is_jumping = 1;
+          jumpCounter = 0;
+        }
+	  	  break;
+	  	case 4:
+	  		if(!select_flag){
+          select_flag = 1;
+        }
+	  	  break;
+	  	default:
+	  	  break;
+	  	}
 
 	  if (fps_flag) 
     {
+
+      for(int i=map_pos, j =0; i < map_pos + 16; i++, j++){ // ładowanie mapy do bufora
+          map_buffor_up[j] = current_map_up[i];
+          map_buffor_down[j] = current_map_down[i];
+        }
+//dodajemy punkty za kazdy tick pętli(za kazdy blok ktory sie przeszlo)
       score++;
 
 	    HAL_RTC_GetTime(&hrtc, &czas_przejscia_mapy, RTC_FORMAT_BIN);
 	    HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
       HAL_ADC_Start(&hadc1);
 	  	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-
       MX_MEMS_Process();
 
-	  	uint32_t wartosc_z_adc = HAL_ADC_GetValue(&hadc1);
-	    int stan_guzika = (wartosc_z_adc + 300) / 700;
+	  	lcd_clear();
 
-      lcd_clear();
-
-      //magnetometr
-      if(abs(magnetic_field_current - magnetic_field_recent) > 500)
-      {
-        is_jumping = 1;
+//wyswietlanie babalugi i skoku
+      if(is_jumping){
+        jumpCounter ++;
+        wyswietl_babaluge(1, 2);
+      }
+      else{
+        wyswietl_babaluge(2, 2);
       }
 
-	  	switch (stan_guzika) {
-	  	case 0:
-	  	break;
-	  	case 1:
-	  		lcd_print(1, 1, "UP");
-	  	break;
-	  	case 2:
-	  	break;
-	  	case 3:
-	  	break;
-	  	case 4:
-      
-	  		lcd_print(1, 1, "SELECT");
-	  	break;
-	  	case 5:
-	  	break;
-	  	}
+//wyswietlanie mapy
+      for(int i=0; i < 16; i++){
+        texture_value_up = map_buffor_down[i];
+        texture_value_down = map_buffor_down[i];
+        
+        
+        switch(texture_value_up) //up row switch
+        {
+          case 0:
+            lcd_print(1, i, " ");
+            break;
+          case 4:
+            lcd_print(1, i, "V");
+            break;
+          default:
+            lcd_print(1, i, "!");
+            break;
+        }
+        switch(texture_value_down) // down row switch
+        {
+          case 0:
+            lcd_print(2, i, " ");
+            break;
+          case 1:
+            wyswietl_kaktus(i);
+            break;
+          case 2:
+            wyswietl_krzak(i);
+            break;
+          case 3:
+            lcd_print(2, i, "A");
+            break;
+          default:
+            lcd_print(2, i, "!");
+            break;
+        }
+      }
+	  	map_pos ++;
 	  }
 
     

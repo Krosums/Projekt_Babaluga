@@ -3,8 +3,13 @@
 #ifndef __MAPS_H
 #define __MAPS_H
 
-extern const char map1[];
-extern const char map2[];
-extern const char map3[];
+extern const int map_upper_1[];
+extern const int map_lower_1[];
+
+extern const int map_upper_2[];
+extern const int map_lower_2[];
+
+extern const int map_upper_3[];
+extern const int map_lower_3[];
 
 #endif /* __MAPS_H */
