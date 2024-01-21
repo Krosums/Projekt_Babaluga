@@ -155,22 +155,26 @@ void start_screen(const char *text)
 {
   int len = strlen(text);
   int i, j;
-
+  int row = 0;
+  int col = 0;
+  
   for (i = 0; i < len + 16 - 1; i++)
   {
-    lcd_clear(); // Clear the line
+    lcd_clear(); 
     lcd_line1();
 
     for (j = 0; j < 16; j++)
     {
       int index = i + j - 16 + 1;
       if (index >= 0 && index < len)
-        putchar(text[index]);
+        lcd_print(row, col, text[index]);
       else
-        putchar(' ');
+        lcd_print(row, col, " ");
+    
+    col++;
     }
-
-    HAL_Delay(500); // Adjust the delay time according to your preference
+  row++;
+  col = 0;
   }
 }
 /* USER CODE END 0 */
@@ -252,14 +256,20 @@ int main(void)
 
   int select_flag = 0;
 
-  int bab_pos = 0;
+  int bab_pos = 2; //1, gdy jest na górze, 2 - gdy jest na dole
   int map_pos = 0;
   int jumpCounter = 0;
   int is_jumping = 0;
-  int game_state = 3; // 0-stan startowy, 1-gra, 2-tranzycja, 3-wyświetlanie lore
+  int game_state = 0; // 1-gra, 2-tranzycja, 3-wyświetlanie lore
 
   int texture_value_up = 0;
   int texture_value_down = 0;
+
+  current_map_length = map_1_length;
+  for(int i=0; i<map_1_length ;i++){  ////  loading mapy numer 1
+    current_map_up[i] = map_upper_1[i];
+    current_map_down[i] = map_lower_1[i];
+  }
  
   ///////////////
   /* USER CODE END 2 */
@@ -268,7 +278,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //print_time_spent_on_map(czas_przejscia_mapy);
+
     uint32_t wartosc_z_adc = HAL_ADC_GetValue(&hadc1);
 	  int stan_guzika = (wartosc_z_adc + 300) / 700;
 
@@ -279,7 +289,7 @@ int main(void)
         jumpCounter = 0;
       }
 
-//tryby gry
+//obsługa guzików
     switch (stan_guzika) {
 	  	case 1:
 	  		//obsluga skoku przez guzik UP
@@ -297,7 +307,8 @@ int main(void)
 	  	  break;
 	  	}
 
-	  if (fps_flag && game_state == 1) //mamy stan gry "gra"
+
+	  if (fps_flag && game_state == 1) //mamy stan gry "gra" ---------------------------------------------------------------------------------------------------
     {
       for(int i=map_pos, j =0; i < map_pos + 16; i++, j++){ // ładowanie mapy do bufora
           map_buffor_up[j] = current_map_up[i];
@@ -321,7 +332,22 @@ int main(void)
         wyswietl_babaluge(1, 2);
       }
       else{
+        bab_pos = 2;
         wyswietl_babaluge(2, 2);
+      }
+      
+      if(jumpCounter >= 3){ // czas skoku BABALUGI i lądowanie
+        is_jumping = 0;
+      }
+
+//obsluga zyc
+      if((current_map_up[1] != 0 && bab_pos == 1) || (current_map_down[1] != 0 && bab_pos == 2))
+      {
+        lifes--;
+        if(lifes == 0)
+        {
+          game_state = 4;
+        }
       }
 
 //wyswietlanie mapy
@@ -362,35 +388,50 @@ int main(void)
         }
       }
 	  	map_pos ++;
-//przejscie do wyniku, ukonczenie mapy
-      if(map_pos + 16 >= current_map_length){
+
+      if(map_pos + 16 >= current_map_length){  //         przejscie do wyniku, ukonczenie mapy
         game_state = 2;
       }
 
 	  }
 
-    if(game_state == 0){
-      // intro gry
+    if(game_state == 0){ //       intro gry
+      start_screen(longText);
+      game_state = 1;
     }
 
     if(game_state == 2){
 
       //wczytanie kolejnej mapy
-      
-      switch(level_number){
-        case 2:
-          
-          break;
-        case 3:
+      if(map_pos){
+        map_pos = 0; //!!!!!!!!!!! nie ustawiać map_pos na zero w żadnym innym miejscu bo się gra wysypie
+        switch(level_number){
+          case 2:
+            current_map_length = map_2_length;
 
-          break;
+            for(int i=0; i<map_2_length ;i++){
+                current_map_up[i] = map_upper_2[i];
+                current_map_down[i] = map_lower_2[i];
+            }
+            
+            break;
+          case 3:
+            current_map_length = map_3_length;
+
+            for(int i=0; i<map_3_length ;i++){
+                  current_map_up[i] = map_upper_3[i];
+                  current_map_down[i] = map_lower_3[i];
+              }
+
+            break;
+        }
       }
-
-      while(select_flag){
+      
         print_score(score);
         print_time_spent_on_map(czas_przejscia_mapy);
-      }
-      game_state = 1;
+        score = 0;
+        bab_pos = 2;
+        game_state = 1;
       // level transition
     }
 
