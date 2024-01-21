@@ -248,6 +248,8 @@ int main(void)
   int map_buffor_up[16];
   int map_buffor_down[16];
 
+  int level_number = 1;
+
   int select_flag = 0;
 
   int bab_pos = 0;
@@ -295,9 +297,8 @@ int main(void)
 	  	  break;
 	  	}
 
-	  if (fps_flag) 
+	  if (fps_flag && game_state == 1) //mamy stan gry "gra"
     {
-
       for(int i=map_pos, j =0; i < map_pos + 16; i++, j++){ // ładowanie mapy do bufora
           map_buffor_up[j] = current_map_up[i];
           map_buffor_down[j] = current_map_down[i];
@@ -316,6 +317,7 @@ int main(void)
 //wyswietlanie babalugi i skoku
       if(is_jumping){
         jumpCounter ++;
+        bab_pos = 1;
         wyswietl_babaluge(1, 2);
       }
       else{
@@ -360,7 +362,37 @@ int main(void)
         }
       }
 	  	map_pos ++;
+//przejscie do wyniku, ukonczenie mapy
+      if(map_pos + 16 >= current_map_length){
+        game_state = 2;
+      }
+
 	  }
+
+    if(game_state == 0){
+      // intro gry
+    }
+
+    if(game_state == 2){
+
+      //wczytanie kolejnej mapy
+      
+      switch(level_number){
+        case 2:
+          
+          break;
+        case 3:
+
+          break;
+      }
+
+      while(select_flag){
+        print_score(score);
+        print_time_spent_on_map(czas_przejscia_mapy);
+      }
+      game_state = 1;
+      // level transition
+    }
 
     
     /* USER CODE END WHILE */
